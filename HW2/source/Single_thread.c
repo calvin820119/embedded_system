@@ -59,17 +59,6 @@ int main(int argc, char** argv)
 		printf("Policy=%s\n\n", sched_mode_str[sched_mode]);
 	}
 	
-	switch(sched_mode){
-		case Normal:
-			sp.sched_priority = sched_get_priority_max(SCHED_OTHER);			
-		case FIFO:
-			sp.sched_priority = sched_get_priority_max(SCHED_FIFO);
-		case RR:
-			sp.sched_priority = sched_get_priority_max(SCHED_RR);
-		default:
-			;
-	}
-
 	omp_set_num_threads(set_num_threads);
 
 	CPU_ZERO(&set);
@@ -79,11 +68,17 @@ int main(int argc, char** argv)
 	ret=sched_setaffinity(0, sizeof(cpu_set_t), &set);	
 	switch(sched_mode){
 		case Normal:
-			sched_setscheduler(0, SCHED_OTHER, &sp);		
+			sp.sched_priority = sched_get_priority_max(SCHED_OTHER);
+			sched_setscheduler(PID, SCHED_OTHER, &sp);	
+			break;	
 		case FIFO:
-			sched_setscheduler(0, SCHED_FIFO, &sp);	
+			sp.sched_priority = sched_get_priority_max(SCHED_FIFO);
+			sched_setscheduler(PID, SCHED_FIFO, &sp);	
+			break;
 		case RR:
-			sched_setscheduler(0, SCHED_RR, &sp);	
+			sp.sched_priority = sched_get_priority_max(SCHED_RR);
+			sched_setscheduler(PID, SCHED_RR, &sp);	
+			break;
 		default:
 			;
 	}

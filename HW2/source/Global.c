@@ -27,7 +27,7 @@ const char sched_mode_str[3][18] = {
 	"Round-Robin"
 };
 typedef enum sched_mode_e{
-	Normal=0, 
+	Normal=0,
 	FIFO, 
 	RR
 }sched_mode_t;
@@ -57,21 +57,10 @@ int main(int argc, char** argv)
 		}
 		printf("Policy=%s\n\n", sched_mode_str[sched_mode]);
 	}
-	
-	switch(sched_mode){
-		case Normal:
-			sp.sched_priority = sched_get_priority_max(SCHED_OTHER);			
-		case FIFO:
-			sp.sched_priority = sched_get_priority_max(SCHED_FIFO);
-		case RR:
-			sp.sched_priority = sched_get_priority_max(SCHED_RR);
-		default:
-			;
-	}
 
 	omp_set_num_threads(set_num_threads);
 	
-	#pragma omp parallel num_threads(set_num_threads) private(PID, ret, set, mask)	
+	#pragma omp parallel num_threads(set_num_threads) private(PID, ret, set, mask, sp)	
 	{	
 		PID=getpid()+omp_get_thread_num();
 		CPU_ZERO(&set);			
@@ -81,14 +70,21 @@ int main(int argc, char** argv)
 		ret=sched_setaffinity(PID, sizeof(cpu_set_t), &set);
 		switch(sched_mode){
 			case Normal:
-				sched_setscheduler(PID, SCHED_OTHER, &sp);		
+				sp.sched_priority = sched_get_priority_max(SCHED_OTHER);
+				sched_setscheduler(PID, SCHED_OTHER, &sp);	
+				break;	
 			case FIFO:
+				sp.sched_priority = sched_get_priority_max(SCHED_FIFO);
 				sched_setscheduler(PID, SCHED_FIFO, &sp);	
+				break;
 			case RR:
+				sp.sched_priority = sched_get_priority_max(SCHED_RR);
 				sched_setscheduler(PID, SCHED_RR, &sp);	
+				break;
 			default:
 				;
 		}
+
 		cpu_alloc[omp_get_thread_num()] = sched_getcpu();
 		sched_getaffinity(PID, sizeof(mask), (cpu_set_t *)&mask);
 		printf("thread%d(%d) cpumask(0x%X)\n", (int)omp_get_thread_num(), PID, mask);
